@@ -237,6 +237,9 @@ uint32_t pios_rfm22b_id = 0;
 uintptr_t pios_uavo_settings_fs_id;
 uintptr_t pios_user_fs_id;
 
+uint32_t pios_servo_enable_mask = PIOS_SERVOPORT_ALL_TIMERS_ENABLE_MASK;
+uint32_t pios_pwm_in_enable_mask = PIOS_SERVOPORT_PWM_IN_ENABLE_MASK;
+
 /*
  * Setup a com port based on the passed cfg, driver and buffer sizes. tx size of -1 make the port rx only
  */
@@ -292,12 +295,12 @@ static void PIOS_Board_configure_dsm(const struct pios_usart_cfg *pios_usart_dsm
     pios_rcvr_group_map[channelgroup] = pios_dsm_rcvr_id;
 }
 
-static void PIOS_Board_configure_pwm(const struct pios_pwm_cfg *pwm_cfg)
+static void PIOS_Board_configure_pwm(const struct pios_pwm_cfg *pwm_cfg, uint32_t enable_mask)
 {
     /* Set up the receiver port.  Later this should be optional */
     uint32_t pios_pwm_id;
 
-    PIOS_PWM_Init(&pios_pwm_id, pwm_cfg);
+    PIOS_PWM_Init(&pios_pwm_id, pwm_cfg, enable_mask >> PIOS_SERVOPORT_FIRST_INPUT);
 
     uint32_t pios_pwm_rcvr_id;
     if (PIOS_RCVR_Init(&pios_pwm_rcvr_id, &pios_pwm_rcvr_driver, pios_pwm_id)) {
@@ -417,9 +420,10 @@ void PIOS_Board_Init(void)
 
     /* Initialize the delayed callback library */
     CallbackSchedulerInitialize();
-
+    //TODO: handle initclock
     /* Set up pulse timers */
     PIOS_TIM_InitClock(&tim_1_cfg);
+    PIOS_TIM_InitClock(&tim_2_cfg);
     PIOS_TIM_InitClock(&tim_3_cfg);
     PIOS_TIM_InitClock(&tim_4_cfg);
     PIOS_TIM_InitClock(&tim_5_cfg);
@@ -832,24 +836,20 @@ void PIOS_Board_Init(void)
     OPLinkStatusSet(&oplinkStatus);
 #endif /* PIOS_INCLUDE_RFM22B */
 
-#if defined(PIOS_INCLUDE_PWM) || defined(PIOS_INCLUDE_PWM)
-
-    const struct pios_servo_cfg *pios_servo_cfg;
-    // default to servo outputs only
-    pios_servo_cfg = &pios_servo_cfg_out;
-#endif
-
     /* Configure the receiver port*/
     uint8_t hwsettings_rcvrport;
     HwSettingsRM_RcvrPortGet(&hwsettings_rcvrport);
     //
     switch (hwsettings_rcvrport) {
     case HWSETTINGS_RM_RCVRPORT_DISABLED:
+        pios_servo_enable_mask &= ~PIOS_SERVOPORT_PWM_IN_ENABLE_MASK;
+        pios_pwm_in_enable_mask = 0;
         break;
     case HWSETTINGS_RM_RCVRPORT_PWM:
 #if defined(PIOS_INCLUDE_PWM)
+        pios_servo_enable_mask &= ~PIOS_SERVOPORT_PWM_IN_ENABLE_MASK;
         /* Set up the receiver port.  Later this should be optional */
-        PIOS_Board_configure_pwm(&pios_pwm_cfg);
+        PIOS_Board_configure_pwm(&pios_pwm_cfg, pios_pwm_in_enable_mask);
 #endif /* PIOS_INCLUDE_PWM */
         break;
     case HWSETTINGS_RM_RCVRPORT_PPM:
@@ -858,21 +858,24 @@ void PIOS_Board_Init(void)
 #if defined(PIOS_INCLUDE_PPM)
         if (hwsettings_rcvrport == HWSETTINGS_RM_RCVRPORT_PPMOUTPUTS) {
             // configure servo outputs and the remaining 5 inputs as outputs
-            pios_servo_cfg = &pios_servo_cfg_out_in_ppm;
+            pios_servo_enable_mask &= ~PIOS_SERVOPORT_PPM_IN_ENABLE_MASK;
+            pios_pwm_in_enable_mask = 0;
+        } else {
+            pios_servo_enable_mask &= ~PIOS_SERVOPORT_PWM_IN_ENABLE_MASK;
         }
 
         PIOS_Board_configure_ppm(&pios_ppm_cfg);
 
-        // enable pwm on the remaining channels
+        // enable pwm in on the remaining channels
         if (hwsettings_rcvrport == HWSETTINGS_RM_RCVRPORT_PPMPWM) {
-            PIOS_Board_configure_pwm(&pios_pwm_ppm_cfg);
+            pios_pwm_in_enable_mask &= ~PIOS_SERVOPORT_PPM_IN_ENABLE_MASK;
+            PIOS_Board_configure_pwm(&pios_pwm_cfg, pios_pwm_in_enable_mask);
         }
 
         break;
 #endif /* PIOS_INCLUDE_PPM */
     case HWSETTINGS_RM_RCVRPORT_OUTPUTS:
-        // configure only the servo outputs
-        pios_servo_cfg = &pios_servo_cfg_out_in;
+        // mask already configured to enable all channels as outputs
         break;
     }
 
@@ -903,7 +906,7 @@ void PIOS_Board_Init(void)
 
 #ifndef PIOS_ENABLE_DEBUG_PINS
     // pios_servo_cfg points to the correct configuration based on input port settings
-    PIOS_Servo_Init(pios_servo_cfg);
+    PIOS_Servo_Init(&pios_servo_cfg_out, pios_servo_enable_mask);
 #else
     PIOS_DEBUG_Init(pios_tim_servoport_all_pins, NELEMENTS(pios_tim_servoport_all_pins));
 #endif

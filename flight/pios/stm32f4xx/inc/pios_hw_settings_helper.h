@@ -33,7 +33,7 @@
 /*
  * @brief define a single led item like PIOS_HW_LED_DEFINITION(GPIOA, GPIO_Pin_3)
  */
-#define PIOS_HW_LED_DEFINITION(_gpio, _pin) { 		\
+#define PIOS_HW_LED_DEFINITION(_gpio, _pin, _active_low) { 		\
         .pin                =      {			\
             .gpio = (_gpio),						\
             .init =      {						\
@@ -44,6 +44,7 @@
                 .GPIO_PuPd  = GPIO_PuPd_UP		\
             },									\
         },										\
+        .active_low = _active_low,              \
     }
 /*
  * @brief define a single servo channel like "PIOS_HW_SERVO_CHANNEL_DEFINITION(9, 2, GPIOA, 3)"
