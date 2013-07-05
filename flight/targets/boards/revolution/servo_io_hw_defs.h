@@ -1,12 +1,12 @@
 /**
  ******************************************************************************
- *
  * @file       servo_io_hw_defs.h  
  * @author     The OpenPilot Team, http://www.openpilot.org Copyright (C) 2013.
- * @brief      brief goes here. 
- *             --
- * @see        The GNU Public License (GPL) Version 3
- *
+ * @addtogroup OpenPilotSystem OpenPilot System
+ * @{
+ * @addtogroup OpenPilotCore OpenPilot Core
+ * @{
+ * @brief Defines board specific servo and timer I/O pins.
  *****************************************************************************/
 /* 
  * This program is free software; you can redistribute it and/or modify 
@@ -24,8 +24,8 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#ifndef SERVO_IO_HW_DEFS_H_
-#define SERVO_IO_HW_DEFS_H_
+#ifndef SERVO_IO_HW_DEFS_H
+#define SERVO_IO_HW_DEFS_H
 
 #include "pios_tim_priv.h"
 
@@ -295,4 +295,4 @@ static const struct pios_ppm_cfg pios_ppm_cfg = {
 #include "pios_rcvr_priv.h"
 #endif /* PIOS_INCLUDE_RCVR */
 
-#endif /* SERVO_IO_HW_DEFS_H_ */
+#endif /* SERVO_IO_HW_DEFS_H */
