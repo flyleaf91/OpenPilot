@@ -33,7 +33,7 @@
 /*
  * @brief define a single led item like PIOS_HW_LED_DEFINITION(GPIOA, GPIO_Pin_3)
  */
-#define PIOS_HW_LED_DEFINITION(_gpio, _pin) { 		\
+#define PIOS_HW_LED_DEFINITION(_gpio, _pin, _active_low) { \
         .pin                =      {			\
             .gpio = (_gpio),						\
             .init =      {						\
@@ -42,9 +42,10 @@
                 .GPIO_Mode  = GPIO_Mode_Out_PP,	\
             },									\
         },										\
+        .active_low = _active_low               \
     }
 
-#define PIOS_HW_LED_DEFINITION_REMAP(_gpio, _pin, _remap) {       \
+#define PIOS_HW_LED_DEFINITION_REMAP(_gpio, _pin, _remap, _active_low) { \
         .pin                =      {            \
             .gpio = (_gpio),                        \
             .init =      {                      \
@@ -54,6 +55,7 @@
             },                                  \
         },                                      \
         .remap              = (_remap),         \
+        .active_low = _active_low               \
     }
 
 
